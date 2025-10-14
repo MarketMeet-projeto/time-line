@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="feed-container">
+  <div class="post-box">
+    <img src="assets/user.png" alt="User" class="avatar">
+    <input placeholder="Compartilhe sua última descoberta..." />
+    <button>Publicar</button>
+  </div>
+
+  <div *ngFor="let post of posts" class="post">
+    <div class="post-header">
+      <img [src]="post.avatar" class="avatar" />
+      <div class="user-info">
+        <strong>{{ post.nome }}</strong>
+        <span>{{ post.username }} • {{ post.tempo }}</span>
+      </div>
+      <button class="seguir">Seguir</button>
+    </div>
+
+    <div class="post-body" *ngIf="post.produto">
+      <img [src]="post.imagemProduto" class="produto-img">
+      <div class="produto-info">
+        <strong>{{ post.produto }}</strong>
+        <span>{{ post.categoria }}</span>
+        <div class="rating">⭐ {{ post.nota }}/5</div>
+      </div>
+    </div>
+
+    <p class="descricao">{{ post.descricao }}</p>
+
+    <div class="post-footer">
+      <span>❤️ {{ post.curtidas }}</span>
+      <span>🔄 Compartilhar</span>
+      <button>Ver Produto</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
