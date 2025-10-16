@@ -1,46 +1,131 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <div class="feed-container">
-  <div class="post-box">
-    <img src="assets/user.png" alt="User" class="avatar">
-    <input placeholder="Compartilhe sua última descoberta..." />
-    <button>Publicar</button>
+<div class="feed-container">
+  <div class="novo-post-box">
+    <img [src]="currentUser.avatar" alt="User" class="avatar">
+    <button 
+      type="button" 
+      class="nova-publicacao-btn"
+      (click)="abrirModal()">
+      Compartilhe sua última descoberta...
+    </button>
+  </div>
+
+  <div class="modal-overlay" *ngIf="modalAberto">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Nova Publicação</h2>
+        <button class="fechar-btn" (click)="fecharModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <textarea 
+          [(ngModel)]="novoPost.texto"
+          placeholder="Compartilhe sua última descoberta..."
+          class="post-textarea">
+        </textarea>
+
+        <div class="post-actions">
+          <button 
+            type="button" 
+            class="add-produto" 
+            (click)="toggleProduto()"
+            [class.active]="adicionandoProduto">
+            🛍️ {{ adicionandoProduto ? 'Remover produto' : 'Adicionar produto' }}
+          </button>
+          
+          <div class="image-upload" *ngIf="!adicionandoProduto">
+            <label for="post-imagem" class="upload-label">
+              📷 Adicionar foto
+            </label>
+            <input 
+              type="file" 
+              id="post-imagem" 
+              accept="image/*"
+              (change)="onImagemSelecionada($event)"
+              style="display: none" />
+          </div>
+        </div>
+
+        <div class="produto-section" *ngIf="adicionandoProduto">
+          <input 
+            [(ngModel)]="novoProduto.nome"
+            placeholder="Nome do produto"
+            class="produto-input" />
+          <input 
+            [(ngModel)]="novoProduto.categoria"
+            placeholder="Categoria"
+            class="produto-input" />
+          <div class="rating-input">
+            <span>Avaliação:</span>
+            <select [(ngModel)]="novoProduto.nota">
+              <option [value]="1">⭐</option>
+              <option [value]="2">⭐⭐</option>
+              <option [value]="3">⭐⭐⭐</option>
+              <option [value]="4">⭐⭐⭐⭐</option>
+              <option [value]="5">⭐⭐⭐⭐⭐</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button 
+          type="button" 
+          class="publicar-btn" 
+          (click)="publicar({ 
+            descricao: novoPost.texto, 
+            produto: adicionandoProduto ? novoProduto : undefined 
+          })"
+          [disabled]="!novoPost.texto.trim()">
+          Publicar
+        </button>
+      </div>
+    </div>
   </div>
 
   <div *ngFor="let post of posts" class="post">
     <div class="post-header">
-      <img [src]="post.avatar" class="avatar" />
+      <img [src]="post.author.avatar" alt="Avatar" class="avatar" />
       <div class="user-info">
-        <strong>{{ post.nome }}</strong>
-        <span>{{ post.username }} • {{ post.tempo }}</span>
+        <strong>{{ post.author.nome }}</strong>
+        <span>{{ post.author.username }} • {{ formatarTempo(post.createdAt) }}</span>
       </div>
-      <button class="seguir">Seguir</button>
+      <button class="seguir" *ngIf="post.author.id !== currentUser.id">
+        Seguir
+      </button>
     </div>
 
     <div class="post-body" *ngIf="post.produto">
-      <img [src]="post.imagemProduto" class="produto-img">
+      <img [src]="post.produto.imagem" [alt]="post.produto.nome" class="produto-img">
       <div class="produto-info">
-        <strong>{{ post.produto }}</strong>
-        <span>{{ post.categoria }}</span>
-        <div class="rating">⭐ {{ post.nota }}/5</div>
+        <strong>{{ post.produto.nome }}</strong>
+        <span>{{ post.produto.categoria }}</span>
+        <div class="rating">⭐ {{ post.produto.nota }}/5</div>
       </div>
     </div>
 
-    <p class="descricao">{{ post.descricao }}</p>
+    <p class="descricao">{{ post.content.texto }}</p>
+    <img *ngIf="post.content.midia" [src]="post.content.midia" alt="Mídia do post" class="post-media">
 
     <div class="post-footer">
-      <span>❤️ {{ post.curtidas }}</span>
-      <span>🔄 Compartilhar</span>
-      <button>Ver Produto</button>
+      <button 
+        class="action-button like-button" 
+        [class.liked]="post.interacoes.curtidoPor.includes(currentUser.id)"
+        (click)="curtirPost(post.id)">
+        <span class="heart-icon">
+          {{ post.interacoes.curtidoPor.includes(currentUser.id) ? '❤️' : '🤍' }}
+        </span>
+        <span class="like-count">{{ post.interacoes.curtidas }}</span>
+      </button>
+      
+      <button 
+        class="action-button share-button"
+        (click)="compartilharPost(post.id)">
+        🔄 Compartilhar ({{ post.interacoes.compartilhamentos }})
+      </button>
+      
+      <button *ngIf="post.produto" class="ver-produto">
+        Ver Produto
+      </button>
     </div>
   </div>
 </div>
-
-</body>
-</html>

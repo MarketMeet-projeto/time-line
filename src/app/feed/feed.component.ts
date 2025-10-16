@@ -1,37 +1,236 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+interface Post {
+  id: string;
+  author: {
+    id: string;
+    nome: string;
+    username: string;
+    avatar: string;
+  };
+  createdAt: Date;
+  content: {
+    texto: string;
+    midia?: string;
+  };
+  produto?: {
+    id: string;
+    nome: string;
+    categoria: string;
+    nota: number;
+    imagem: string;
+  };
+  interacoes: {
+    curtidas: number;
+    curtidoPor: string[];
+    compartilhamentos: number;
+  };
+}
+
 @Component({
   selector: 'app-feed',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './feed.component.html',
   styleUrls: ['./feed.component.css']
 })
 export class FeedComponent {
-  posts = [
+  posts: Post[] = [
     {
-      nome: 'Ana Silva',
-      username: '@anaSilva',
-      tempo: '2h',
-      avatar: 'assets/ana.jpg',
-      produto: 'iPhone 15 Pro',
-      categoria: 'Smartphones',
-      nota: 5,
-      imagemProduto: 'assets/iphone15pro.jpg',
-      descricao: 'Finalmente troquei meu iPhone antigo e que diferença! A câmera é impressionante...',
-      curtidas: 24
+      id: '1',
+      author: {
+        id: '2',
+        nome: 'Ana Silva',
+        username: '@anaSilva',
+        avatar: 'assets/ana.jpg'
+      },
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      content: {
+        texto: 'Finalmente troquei meu iPhone antigo e que diferença! A câmera é impressionante...'
+      },
+      produto: {
+        id: '1',
+        nome: 'iPhone 15 Pro',
+        categoria: 'Smartphones',
+        nota: 5,
+        imagem: 'assets/iphone15pro.jpg'
+      },
+      interacoes: {
+        curtidas: 24,
+        curtidoPor: [],
+        compartilhamentos: 0
+      }
     },
     {
-      nome: 'Carlos Mendes',
-      username: '@carlosmnds',
-      tempo: '4h',
-      avatar: 'assets/carlos.jpg',
-      produto: '',
-      categoria: '',
-      nota: 0,
-      imagemProduto: '',
-      descricao: 'Recomendo muito essa loja, ótimo atendimento!',
-      curtidas: 10
+      id: '2',
+      author: {
+        id: '3',
+        nome: 'Carlos Mendes',
+        username: '@carlosmnds',
+        avatar: 'assets/carlos.jpg'
+      },
+      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
+      content: {
+        texto: 'Recomendo muito essa loja, ótimo atendimento!'
+      },
+      interacoes: {
+        curtidas: 10,
+        curtidoPor: [],
+        compartilhamentos: 0
+      }
     }
   ];
+  modalAberto = false;
+  novoPost = {
+    texto: '',
+    imagem: undefined as string | undefined
+  };
+
+  novoProduto = {
+    nome: '',
+    categoria: '',
+    nota: 5,
+    imagem: undefined as string | undefined
+  };
+
+  adicionandoProduto = false;
+
+  currentUser = {
+    id: '1',
+    nome: 'Usuário Atual',
+    username: '@usuario',
+    avatar: 'assets/user.png'
+  };
+
+  abrirModal(): void {
+    this.modalAberto = true;
+  }
+
+  fecharModal(): void {
+    this.modalAberto = false;
+    this.resetarFormulario();
+  }
+
+  resetarFormulario(): void {
+    this.novoPost = {
+      texto: '',
+      imagem: undefined
+    };
+    this.novoProduto = {
+      nome: '',
+      categoria: '',
+      nota: 5,
+      imagem: undefined
+    };
+    this.adicionandoProduto = false;
+  }
+
+  toggleProduto(): void {
+    this.adicionandoProduto = !this.adicionandoProduto;
+    if (!this.adicionandoProduto) {
+      this.novoProduto = {
+        nome: '',
+        categoria: '',
+        nota: 5,
+        imagem: undefined
+      };
+    }
+  }
+
+  onImagemSelecionada(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.novoPost.imagem = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  onProdutoImagemSelecionada(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.novoProduto.imagem = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  publicar(novaPublicacao: { descricao: string; produto?: { nome: string; categoria: string; nota: number; imagem: string } }): void {
+    const newPost: Post = {
+      id: Date.now().toString(),
+      author: this.currentUser,
+      createdAt: new Date(),
+      content: {
+        texto: novaPublicacao.descricao
+      },
+      produto: novaPublicacao.produto ? {
+        id: Date.now().toString(),
+        ...novaPublicacao.produto
+      } : undefined,
+      interacoes: {
+        curtidas: 0,
+        curtidoPor: [],
+        compartilhamentos: 0
+      }
+    };
+    
+    this.posts = [newPost, ...this.posts];
+    this.fecharModal();
+  }
+
+  curtirPost(postId: string): void {
+    this.posts = this.posts.map(post => {
+      if (post.id === postId) {
+        const curtido = post.interacoes.curtidoPor.includes(this.currentUser.id);
+        return {
+          ...post,
+          interacoes: {
+            ...post.interacoes,
+            curtidas: curtido ? post.interacoes.curtidas - 1 : post.interacoes.curtidas + 1,
+            curtidoPor: curtido 
+              ? post.interacoes.curtidoPor.filter(id => id !== this.currentUser.id)
+              : [...post.interacoes.curtidoPor, this.currentUser.id]
+          }
+        };
+      }
+      return post;
+    });
+  }
+
+  compartilharPost(postId: string): void {
+    this.posts = this.posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          interacoes: {
+            ...post.interacoes,
+            compartilhamentos: post.interacoes.compartilhamentos + 1
+          }
+        };
+      }
+      return post;
+    });
+  }
+
+  formatarTempo(data: Date): string {
+    const agora = new Date();
+    const diff = agora.getTime() - data.getTime();
+    const horas = Math.floor(diff / (1000 * 60 * 60));
+    
+    if (horas < 1) {
+      const minutos = Math.floor(diff / (1000 * 60));
+      return `${minutos}m`;
+    } else if (horas < 24) {
+      return `${horas}h`;
+    } else {
+      const dias = Math.floor(horas / 24);
+      return `${dias}d`;
+    }
+  }
 }
