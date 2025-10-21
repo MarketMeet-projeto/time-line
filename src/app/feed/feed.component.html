@@ -71,9 +71,14 @@
         <button 
           type="button" 
           class="publicar-btn" 
-          (click)="publicar({ 
+          (click)="onPublicarClick($event); publicar({ 
             descricao: novoPost.texto, 
-            produto: adicionandoProduto ? novoProduto : undefined 
+            produto: adicionandoProduto ? {
+              nome: novoProduto.nome,
+              categoria: novoProduto.categoria,
+              nota: novoProduto.nota,
+              imagem: novoProduto.imagem || ''
+            } : undefined 
           })"
           [disabled]="!novoPost.texto.trim()">
           Publicar
@@ -82,7 +87,7 @@
     </div>
   </div>
 
-  <div *ngFor="let post of posts" class="post">
+  <div *ngFor="let post of posts" class="post" @publishAnimation>
     <div class="post-header">
       <img [src]="post.author.avatar" alt="Avatar" class="avatar" />
       <div class="user-info">
@@ -95,7 +100,7 @@
     </div>
 
     <div class="post-body" *ngIf="post.produto">
-      <img [src]="post.produto.imagem" [alt]="post.produto.nome" class="produto-img">
+      <img *ngIf="post.produto.imagem" [src]="post.produto.imagem" [alt]="post.produto.nome" class="produto-img">
       <div class="produto-info">
         <strong>{{ post.produto.nome }}</strong>
         <span>{{ post.produto.categoria }}</span>
@@ -107,23 +112,35 @@
     <img *ngIf="post.content.midia" [src]="post.content.midia" alt="Mídia do post" class="post-media">
 
     <div class="post-footer">
-      <button 
-        class="action-button like-button" 
-        [class.liked]="post.interacoes.curtidoPor.includes(currentUser.id)"
-        (click)="curtirPost(post.id)">
-        <span class="heart-icon">
-          {{ post.interacoes.curtidoPor.includes(currentUser.id) ? '❤️' : '🤍' }}
-        </span>
-        <span class="like-count">{{ post.interacoes.curtidas }}</span>
-      </button>
+      <div class="post-actions">
+        <button 
+          type="button"
+          class="action-button like-button" 
+          [class.liked]="post.interacoes.curtidoPor.includes(currentUser.id)"
+          (click)="curtirPost(post.id)">
+          <span class="heart-icon" 
+                [@heartBeat]="post.interacoes.animationState || 'inactive'"
+                [@likeAnimation]="post.interacoes.curtidoPor.includes(currentUser.id)">
+            {{ post.interacoes.curtidoPor.includes(currentUser.id) ? '❤️' : '🤍' }}
+          </span>
+          <span class="like-count" 
+                [@likeAnimation]="post.interacoes.curtidas">
+            {{ post.interacoes.curtidas }}
+          </span>
+        </button>
+        
+        <button 
+          type="button"
+          class="action-button share-button"
+          (click)="onCompartilharClick(post.id, $event)">
+          🔄 Compartilhar <span *ngIf="post.interacoes.compartilhamentos > 0">({{ post.interacoes.compartilhamentos }})</span>
+        </button>
+      </div>
       
       <button 
-        class="action-button share-button"
-        (click)="compartilharPost(post.id)">
-        🔄 Compartilhar ({{ post.interacoes.compartilhamentos }})
-      </button>
-      
-      <button *ngIf="post.produto" class="ver-produto">
+        *ngIf="post.produto" 
+        type="button"
+        class="ver-produto">
         Ver Produto
       </button>
     </div>

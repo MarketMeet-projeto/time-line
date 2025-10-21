@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { likeAnimation, publishAnimation, heartBeatAnimation } from '../animations/post.animations';
 
 interface Post {
   id: string;
@@ -20,12 +21,13 @@ interface Post {
     nome: string;
     categoria: string;
     nota: number;
-    imagem: string;
+    imagem?: string;
   };
   interacoes: {
     curtidas: number;
     curtidoPor: string[];
     compartilhamentos: number;
+    animationState?: 'inactive' | 'active';
   };
 }
 
@@ -34,7 +36,8 @@ interface Post {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './feed.component.html',
-  styleUrls: ['./feed.component.css']
+  styleUrls: ['./feed.component.css'],
+  animations: [likeAnimation, publishAnimation, heartBeatAnimation]
 })
 export class FeedComponent {
   posts: Post[] = [
@@ -161,7 +164,7 @@ export class FeedComponent {
     }
   }
 
-  publicar(novaPublicacao: { descricao: string; produto?: { nome: string; categoria: string; nota: number; imagem: string } }): void {
+  publicar(novaPublicacao: { descricao: string; produto?: { nome: string; categoria: string; nota: number; imagem?: string } }): void {
     const newPost: Post = {
       id: Date.now().toString(),
       author: this.currentUser,
@@ -195,12 +198,29 @@ export class FeedComponent {
             curtidas: curtido ? post.interacoes.curtidas - 1 : post.interacoes.curtidas + 1,
             curtidoPor: curtido 
               ? post.interacoes.curtidoPor.filter(id => id !== this.currentUser.id)
-              : [...post.interacoes.curtidoPor, this.currentUser.id]
+              : [...post.interacoes.curtidoPor, this.currentUser.id],
+            animationState: 'active'
           }
         };
       }
       return post;
     });
+
+    // Reset animation state after animation completes
+    setTimeout(() => {
+      this.posts = this.posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            interacoes: {
+              ...post.interacoes,
+              animationState: 'inactive'
+            }
+          };
+        }
+        return post;
+      });
+    }, 300);
   }
 
   compartilharPost(postId: string): void {
@@ -217,6 +237,8 @@ export class FeedComponent {
       return post;
     });
   }
+  
+  
 
   formatarTempo(data: Date): string {
     const agora = new Date();
@@ -232,5 +254,18 @@ export class FeedComponent {
       const dias = Math.floor(horas / 24);
       return `${dias}d`;
     }
+  }
+
+  onPublicarClick(event: MouseEvent): void {
+    const button = event.currentTarget as HTMLButtonElement;
+    button.classList.add('clicked');
+    setTimeout(() => button.classList.remove('clicked'), 300);
+  }
+
+  onCompartilharClick(postId: string, event: MouseEvent): void {
+    const button = event.currentTarget as HTMLButtonElement;
+    button.classList.add('clicked');
+    setTimeout(() => button.classList.remove('clicked'), 300);
+    this.compartilharPost(postId);
   }
 }
